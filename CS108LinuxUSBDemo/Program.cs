@@ -206,6 +206,11 @@ namespace CS108LinuxUSBDemo
                     Console.WriteLine("Device failed to transmit data.");
                 }
 
+                Thread.Sleep(100);
+                //close USB connection
+                int r=HID.Close(m_hid);
+
+
                 //end threads
                 thread2.Abort();
                 thread1.Abort();
@@ -440,7 +445,7 @@ namespace CS108LinuxUSBDemo
                         ushort len = (ushort)(payload_len - 2);
                         index = m_read_buffer_tail;
                         index += 10;
-                        lock (locker)
+                        //lock (locker)
                         {
                             for (int i = 0; i < len; i++)
                             {
@@ -509,7 +514,7 @@ namespace CS108LinuxUSBDemo
             stopwatch2.Start();
             while (!m_stopRfidDecode)
             {
-                lock (locker)
+                //lock (locker)
                 {
                     if (m_rfid_buffer_size >= 8)
                     {
@@ -607,7 +612,7 @@ namespace CS108LinuxUSBDemo
                     continue;
                 }
 
-                lock (locker)
+                //lock (locker)
                 {
                     //finish reading
                     index = m_rfid_buffer_tail;
@@ -764,7 +769,7 @@ namespace CS108LinuxUSBDemo
 
         private static ushort GetRfidBufferSize()
         {
-            lock (locker)
+            //lock (locker)
             {
                 return m_rfid_buffer_size;
             }
