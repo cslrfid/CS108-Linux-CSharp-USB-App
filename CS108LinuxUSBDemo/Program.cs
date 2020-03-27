@@ -43,6 +43,8 @@ namespace CS108LinuxUSBDemo
                 // Attempt to open the device
                 if (status == HID.HID_DEVICE_SUCCESS)
                 {
+                    GetSilabVersion(m_hid);
+                    GetBTVersion(m_hid);
                     reader = new RFIDReader(m_hid);
                 }
                 else
@@ -61,7 +63,7 @@ namespace CS108LinuxUSBDemo
                     Console.WriteLine("Device failed to power on");
                     return;
                 }
-
+                Thread.Sleep(100);
                 //enable battery reporting notifications
                 command = NotifyCommands.SetBatteryReport(true);
                 if (!USBSocket.TransmitData(m_hid, command, command.Length))
@@ -107,12 +109,21 @@ namespace CS108LinuxUSBDemo
                     Console.WriteLine("Device failed to power off");
                 }
 
-                Thread.Sleep(2000);
+                //disable battery reporting notifications
+                command = NotifyCommands.SetBatteryReport(false);
+                if (!USBSocket.TransmitData(m_hid, command, command.Length))
+                {
+                    Console.WriteLine("Device failed to disable battery reporting.");
+                    return;
+                }
+
+                //Stop RFID data processing
+                reader.close();
+                Thread.Sleep(1000);
+
+                Thread.Sleep(100);
                 //close USB connection
                 HID.Close(m_hid);
-
-                //close reader
-                reader.close();
 
                 Console.WriteLine("All operations completed.  Press any key to exit program...");
                 Console.ReadKey();
@@ -127,7 +138,106 @@ namespace CS108LinuxUSBDemo
 
         }
 
-        
+        private static void GetSilabVersion(IntPtr m_hid)
+        {
+            byte[] buffer = new byte[128];
+            int bytesRead = 0;
+
+            byte[] command = RFIDCommands.PowerOn(false);
+
+            if (!USBSocket.TransmitData(m_hid, command, command.Length))
+            {
+                Console.WriteLine("Device failed to transmit data.");
+                return;
+            }
+
+            if (HID.IsOpened(m_hid))
+            {
+                if (USBSocket.ReceiveData(m_hid, ref buffer, buffer.Length, ref bytesRead, 1000))
+                {
+                }
+            }
+            else
+            {
+                Console.WriteLine("Device is not connected.");
+            }
+
+            command = SiliconLabCommands.GetVersion();
+
+            if (!USBSocket.TransmitData(m_hid, command, command.Length))
+            {
+                Console.WriteLine("Device failed to transmit data.");
+                return;
+            }
+
+            // Make sure that we are connected to a device
+            if (HID.IsOpened(m_hid))
+            {
+                if (USBSocket.ReceiveData(m_hid, ref buffer, buffer.Length, ref bytesRead, 1000))
+                {
+                    if ((buffer[0] == Constants.PREFIX) && (bytesRead >= 13) &&
+                        (buffer[8] == 0xB0) && (buffer[9] == 0x00))
+                    {
+                        string slabVersion = buffer[10].ToString() + "." +
+                                                buffer[11].ToString() + "." +
+                                                buffer[12].ToString();
+                        Console.WriteLine("Silicon lab firmware version: " + slabVersion);
+                    }
+                    else
+                        Console.WriteLine("Cannot get silicon lab firmware version.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Device is not connected.");
+            }
+        }
+
+        private static void GetBTVersion(IntPtr m_hid)
+        {
+            byte[] command = BluetoothCommands.GetVersion();
+
+            if (!USBSocket.TransmitData(m_hid, command, command.Length))
+            {
+                Console.WriteLine("Device failed to transmit data.");
+                return;
+            }
+
+            byte[] buffer = new byte[128];
+            int bytesRead = 0;
+
+            // Make sure that we are connected to a device
+            if (HID.IsOpened(m_hid))
+            {
+                if (USBSocket.ReceiveData(m_hid, ref buffer, buffer.Length, ref bytesRead, 2000))
+                {
+                    if ((buffer[0] == Constants.PREFIX) && (bytesRead >= 13) &&
+                        (buffer[8] == 0xC0) && (buffer[9] == 0x00))
+                    {
+                        uint crc = ((uint)buffer[6] << 8) | (uint)buffer[7];
+
+                        if (crc != 0 && !CRC.CheckCRC(buffer, 0, 13, crc))
+                        {
+                            Console.WriteLine("Wrong CRC received.");
+                            return;
+                        }
+
+                        string btVersion = buffer[10].ToString() + "." +
+                                                buffer[11].ToString() + "." +
+                                                buffer[12].ToString();
+                        Console.WriteLine("Bbluetooth firmware version: " + btVersion);
+                    }
+                    else
+                        Console.WriteLine("Cannot get bluetooth firmware version.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Device is not connected.");
+            }
+        }
+
+
 
     }
 }

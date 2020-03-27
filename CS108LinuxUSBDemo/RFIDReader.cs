@@ -50,7 +50,7 @@ namespace CS108LinuxUSBDemo
         readonly uint maxq = 15;
         readonly uint tmult = 4;
         readonly uint retry = 0;
-        readonly uint compact = 0;     //0=normal, 1=conpact
+        readonly uint compact = 1;     //0=normal, 1=conpact
         readonly uint brandid = 0;     //for ucode8 only
         readonly uint delay = 0;
         readonly uint cycle_delay = 0;
@@ -418,7 +418,7 @@ namespace CS108LinuxUSBDemo
                                 }
                                 rssi = ConvertNBRSSI(data[cnt++]);
                                 phase = 0;
-                                //Console.WriteLine("PC=" + ByteArrayToHexString(PC, 2) + " EPC=" + ByteArrayToHexString(EPC, epclen) + " RSSI=" + rssi.ToString("0.00"));
+                                Console.WriteLine("[RFIDReader] PC=" + ByteArrayToHexString(PC, 2) + " EPC=" + ByteArrayToHexString(EPC, epclen) + " RSSI=" + rssi.ToString("0.00"));
                                 m_totaltag++;
                             }
                         }
@@ -433,7 +433,7 @@ namespace CS108LinuxUSBDemo
                             }
                             rssi = ConvertNBRSSI(data[5]);
                             phase = ((float)(data[6] & 0x3F)) * 360 / 128;
-                            //Console.WriteLine("PC=" + ByteArrayToHexString(PC, 2) + " EPC=" + ByteArrayToHexString(EPC, epclen) + " RSSI=" + rssi.ToString("0.00"));
+                            Console.WriteLine("[RFIDReader] PC=" + ByteArrayToHexString(PC, 2) + " EPC=" + ByteArrayToHexString(EPC, epclen) + " RSSI=" + rssi.ToString("0.00"));
                             m_totaltag++;
                         }
                         continue;
@@ -776,8 +776,11 @@ namespace CS108LinuxUSBDemo
         public void close()
         {
             //close
-            thread2.Abort();
-            thread1.Abort();
+            //thread2.Abort();
+            //thread1.Abort();
+            m_stopRfidDecode = true;
+            m_stopReceive = true;
+
 
         }
 
