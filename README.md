@@ -1,7 +1,7 @@
 # CS108 Linux USB Demo App 
 
 <p align="center">
-<img src="./images/csl-logo.png"/>
+  <a href="https://www.convergence.com.hk"><img src="./images/csl-logo.png"/></a>
 </p>
 
 Please refer to the following post for detailed instructions:
