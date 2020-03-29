@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 
 namespace CS108LinuxUSBDemo
@@ -17,6 +16,21 @@ namespace CS108LinuxUSBDemo
 
             try
             {
+
+                //reset libUSB device using the tool usb-reset (on Linux only)
+                //https://github.com/ralight/usb-reset
+
+                PlatformID pid = Environment.OSVersion.Platform;
+                if (pid == PlatformID.Unix)
+                { 
+                    string ret = ExecuteBashCommand("sudo usb-reset 10c4:8468");
+                    if (ret != String.Empty)
+                    {
+                        Console.WriteLine("Unable to reset CS108 USB device: " + ret);
+                        return;
+                    }
+                }
+
                 bool found = false;
                 // Iterate through each HID device with matching VID/PID
                 for (int i = 0; i < HID.GetNumHidDevices(); i++)
@@ -63,7 +77,7 @@ namespace CS108LinuxUSBDemo
                     Console.WriteLine("Device failed to power on");
                     return;
                 }
-                Thread.Sleep(100);
+
                 //enable battery reporting notifications
                 command = NotifyCommands.SetBatteryReport(true);
                 if (!USBSocket.TransmitData(m_hid, command, command.Length))
@@ -71,8 +85,6 @@ namespace CS108LinuxUSBDemo
                     Console.WriteLine("Device failed to enable battery reporting.");
                     return;
                 }
-
-                Thread.Sleep(100);
 
                 if (!reader.setPowerAndChannel())
                 {
@@ -121,7 +133,6 @@ namespace CS108LinuxUSBDemo
                 reader.close();
                 Thread.Sleep(1000);
 
-                Thread.Sleep(100);
                 //close USB connection
                 HID.Close(m_hid);
 
@@ -235,6 +246,31 @@ namespace CS108LinuxUSBDemo
             {
                 Console.WriteLine("Device is not connected.");
             }
+        }
+
+
+        static string ExecuteBashCommand(string command)
+        {
+            // according to: https://stackoverflow.com/a/15262019/637142
+            // thans to this we will pass everything as one command
+            command = command.Replace("\"", "\"\"");
+
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = "-c \"" + command + "\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
+                }
+            };
+
+            proc.Start();
+            proc.WaitForExit();
+
+            return proc.StandardOutput.ReadToEnd();
         }
 
 

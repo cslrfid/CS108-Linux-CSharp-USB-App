@@ -11,12 +11,12 @@ namespace CS108LinuxUSBDemo
     {
         static IntPtr m_hid = IntPtr.Zero;
 
-        byte[] m_read_buffer = new byte[200000]; // read ring buffer
+        byte[] m_read_buffer = new byte[65536]; // read ring buffer
         ushort m_read_buffer_size = 0;
         ushort m_read_buffer_head = 0;
         ushort m_read_buffer_tail = 0;
 
-        byte[] m_rfid_buffer = new byte[200000]; // rfid ring buffer
+        byte[] m_rfid_buffer = new byte[65536]; // rfid ring buffer
         ushort m_rfid_buffer_size = 0;
         ushort m_rfid_buffer_head = 0;
         ushort m_rfid_buffer_tail = 0;
@@ -263,9 +263,9 @@ namespace CS108LinuxUSBDemo
             stopwatch2.Start();
             while (!m_stopRfidDecode)
             {
-                lock (locker)
+                if (m_rfid_buffer_size >= 8)
                 {
-                    if (m_rfid_buffer_size >= 8)
+                    lock (locker)
                     {
                         stopwatch2.Reset();
                         stopwatch2.Start();
@@ -328,17 +328,18 @@ namespace CS108LinuxUSBDemo
                             continue;
                         }
                     }
-                    else
-                    {
-                        /*if (stopwatch2.ElapsedMilliseconds >= 4000) {
-                            UpdateInfo("No data received within 4 seconds.");
-                            stopwatch2.Reset();
-                            stopwatch2.Start();
-                        }*/
-                        Thread.Sleep(1); // save CPU usage
-                        continue;
-                    }
                 }
+                else
+                {
+                    /*if (stopwatch2.ElapsedMilliseconds >= 4000) {
+                        UpdateInfo("No data received within 4 seconds.");
+                        stopwatch2.Reset();
+                        stopwatch2.Start();
+                    }*/
+                    Thread.Sleep(1); // save CPU usage
+                    continue;
+                }
+                
 
                 //wait until the full packet data has come in
                 bool inCompletePacket = false;
